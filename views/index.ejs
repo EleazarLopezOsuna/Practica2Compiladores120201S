@@ -1,1 +1,101 @@
-Middle
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item dropdown">
+				<button type="button" class="btn btn-success" id="openTrigg">Abrir</button>
+			</li>
+			<li>
+				<input id="nombreNuevo" type="text" class="form-control" placeholder="Nombre del Archivo" aria-label="Recipient's username" aria-describedby="basic-addon2">
+			</li>
+			<li>
+				<button type="button" class="btn btn-success" onclick="crearNuevo()">Crear</button>
+			</li>
+      <li class="nav-item dropdown">
+				<button type="button" class="btn btn-primary">Compilar</button>
+			</li>
+			<li class="nav-item dropdown">
+				<button type="button" class="btn btn-danger">Errores Lexicos</button>
+			</li>
+			<li class="nav-item dropdown">
+				<button type="button" class="btn btn-warning">Errores Sintacticos</button>
+			</li>
+			<li>
+				<input id="nombreGuardar" type="text" class="form-control" placeholder="Guardar Como" aria-label="Recipient's username" aria-describedby="basic-addon2">
+			</li>
+			<li>
+				<button type="button" class="btn btn-success" onclick="guardarNuevo()">Guardar</button>
+			</li>
+    </ul>
+  </div>
+</nav>
+<div>
+  <ul id="archivosActivos" class="nav nav-tabs">
+  </ul>
+
+  <div id="areasTexto" class="tab-content" hidden="true">
+    <div id="home" class="tab-pane fade in active">
+      <div>
+        <label>Posicion Actual: </label><input id="sel_in" style="border-style:none" readonly>
+        <br>
+        <textarea class="rownr" rows="10" cols="3" value="1" readonly></textarea>
+          <textarea id = "codigo" class="txt" rows="10" cols="150" nowrap="nowrap" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off"
+            spellcheck="false" onclick="input_changed(this)" onkeyup="keyup(this,event)" oninput="input_changed(this)"
+            onscroll="scroll_changed(this)"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input id="fileInput" type="file" hidden accept=".cs"/>
+<script>
+	document.getElementById('openTrigg').addEventListener('click', () => {
+  	document.getElementById('fileInput').click()
+	});
+
+	const input = document.getElementById('fileInput')
+	input.addEventListener('change', function(e){
+		const reader = new FileReader()
+		reader.readAsText(input.files[0])
+		reader.onload = function(){
+			agregar(input.files[0].name, reader.result)
+		}
+	}, false)
+
+	var txt = "";
+
+	function crearNuevo(){
+		var pom = document.createElement('a');
+  	pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + 
+
+		encodeURIComponent());
+  	pom.setAttribute('download', document.getElementById('nombreNuevo').value + ".cs");
+
+  	pom.style.display = 'none';
+  	document.body.appendChild(pom);
+
+		pom.click();
+		
+		document.body.removeChild(pom);
+		
+		if(document.getElementById("areasTexto").hidden === true){
+    	document.getElementById("areasTexto").hidden = false;
+		}
+		agregar(document.getElementById('nombreNuevo').value + ".cs", "")
+	}
+
+	function guardarNuevo(){
+		var pom = document.createElement('a');
+  	pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + 
+
+		encodeURIComponent(document.getElementById('codigo').value));
+  	pom.setAttribute('download', document.getElementById('nombreGuardar').value + ".cs");
+
+  	pom.style.display = 'none';
+  	document.body.appendChild(pom);
+
+		pom.click();
+		
+		document.body.removeChild(pom);
+		agregar(document.getElementById('nombreGuardar').value + ".cs", document.getElementById('codigo').value)
+	}
+</script>
