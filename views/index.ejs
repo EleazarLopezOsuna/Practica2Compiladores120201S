@@ -64,7 +64,7 @@
 	var txt = "";
 
 	function crearNuevo(){
-		var pom = document.createElement('a');
+		/*var pom = document.createElement('a');
   	pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + 
 
 		encodeURIComponent());
@@ -80,7 +80,17 @@
 		if(document.getElementById("areasTexto").hidden === true){
     	document.getElementById("areasTexto").hidden = false;
 		}
-		agregar(document.getElementById('nombreNuevo').value + ".cs", "")
+		agregar(document.getElementById('nombreNuevo').value + ".cs", "")*/
+		iniciarAnalisisLexico(document.getElementById('codigo').value);
+		var tokens = obtenerTokens();
+		var errores = obtenerErrores();
+		errores = iniciarAnalisisSintactico(tokens, errores)
+		for(var i = 0; i < tokens.length; i++){
+			//console.log("Nombre: " + tokens[i].nombre + " Valor: " + tokens[i].lexema)
+		}
+		for(var i = 0; i < errores.length; i++){
+			//console.log(errores[i].mensaje + errores[i].lexema + " linea: " + errores[i].linea + " columna: " + errores[i].columna)
+		}
 	}
 
 	function guardarNuevo(){
