@@ -106,33 +106,47 @@
 		iniciarAnalisisLexico(document.getElementById('codigo').value);
 		var tokens = obtenerTokens();
 		var errores = obtenerErrores();
+		var comentarios = obtenerComentarios();
 
 		if(errores.length > 0){
 			alert("Texto Erroneo")
 			reportarErrores(errores)
 		}else{
 			var contadorErrores = errores.length
-			errores = iniciarAnalisisSintactico(tokens, errores)
+			var resultado = iniciarAnalisisSintactico(tokens, errores, comentarios)
+			errores = resultado[0]
 
 			if(errores.length === contadorErrores){
-				alert("Texto correcto")
+				agregarVariables(resultado[1]);
 			}else{
 				alert("Texto Erroneo")
 				reportarErrores(errores)
 			}
 
-			for(var i = 0; i < errores.length; i++){
-				console.log(errores[i].mensaje + errores[i].lexema + " linea: " + errores[i].linea + " columna: " + errores[i].columna)
+			for(var i = 0; i < tokens.length; i++){
+				console.log("Nombre: " + tokens[i].nombre + " Valor: " + tokens[i].lexema)
 			}
+
+			/*for(var i = 0; i < errores.length; i++){
+				console.log(errores[i].mensaje + errores[i].lexema + " linea: " + errores[i].linea + " columna: " + errores[i].columna)
+			}*/
 		}
 	}
 
 	function reportarErrores(errores){
-		/*
-			<th scope="col">Nombre</th>
-								<th scope="col">Tipo</th>
-								<th scope="col">Linea</th>
-								*/
+		var child = document.getElementById('cabeceras').lastElementChild;  
+  	while (child) { 
+    	document.getElementById('cabeceras').removeChild(child); 
+    	child = document.getElementById('cabeceras').lastElementChild; 
+  	}
+
+  	child = document.getElementById('cuerpo').lastElementChild;  
+  	while (child) { 
+    	document.getElementById('cuerpo').removeChild(child); 
+    	child = document.getElementById('cuerpo').lastElementChild; 
+  	}
+
+
 		var tipo = document.createElement('th')
 		var linea = document.createElement('th')
 		var columna = document.createElement('th')

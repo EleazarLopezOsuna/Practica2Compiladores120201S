@@ -11,12 +11,15 @@ var tipos = [
   "int", "char", "bool", "string", "double"
 ]
 
+var comentarios = []
+
 class nodoArbol {
-  constructor(nombre, valor, tipo, hijos) {
+  constructor(nombre, valor, tipo, hijos, linea) {
     this.nombre = nombre
     this.valor = valor
     this.tipo = tipo
     this.hijos = hijos
+    this.linea = linea
   }
 }
 
@@ -32,7 +35,8 @@ function imprimirRaiz(nodo, cadena){
   return cadena
 }
 
-function iniciarAnalisisSintactico(tokens, errores){
+function iniciarAnalisisSintactico(tokens, errores, comments){
+  comentarios = comments
   let retorno = []
   raiz = new nodoArbol("INICIO_" + contador++, "INICIO", "inicio" ,[])
   for(var i = 0; i < tokens.length; i++){
@@ -54,7 +58,7 @@ function iniciarAnalisisSintactico(tokens, errores){
       case "string":
       case "bool":
         retorno = comprobarDeclaracion(tokens, i + 1, errores, 
-          new nodoArbol("TIPO_" + contador++, tokenAnalizar.lexema, tokenAnalizar.nombre, []));
+          new nodoArbol("TIPO_" + contador++, tokenAnalizar.lexema, tokenAnalizar.nombre, [], tokenAnalizar.linea));
         i = retorno[0];
         raiz.hijos.push(retorno[1])
         break;
@@ -63,7 +67,7 @@ function iniciarAnalisisSintactico(tokens, errores){
       //#region FUNCION REASIGNACION DE VARIABLES
       case "identificador":
         retorno = comprobarReasignacion(tokens, i + 1, errores, 
-          new nodoArbol("OPERANDO_" + contador++, tokenAnalizar.lexema, tokenAnalizar.nombre, []));
+          new nodoArbol("OPERANDO_" + contador++, tokenAnalizar.lexema, tokenAnalizar.nombre, [], tokenAnalizar.linea));
         i = retorno[0];
         raiz.hijos.push(retorno[1])
         break;
@@ -117,9 +121,24 @@ function iniciarAnalisisSintactico(tokens, errores){
         break;
       //#endregion
 
+      //#region COMENTARIOS
+      case "comentario":
+        for(var j = 0; j < comentarios.length; j++){
+          if(comentarios[j][0] === tokenAnalizar.lexema){
+            if(tokenAnalizar.lexema.startsWith("@S")){
+              raiz.hijos.push(new nodoArbol("COMENTARIO_" + contador++, comentarios[j][1], "linea", []))
+            }else{
+              raiz.hijos.push(new nodoArbol("COMENTARIO_" + contador++, comentarios[j][1], "multi", []))
+            }
+            break;
+          }
+        }
+        break;
+      //#endregion
+
       //#region ERROR
       default:
-        errores.push(new Error("Sintactico", tokens[i].lexema, tokens[i].linea, tokens[i].columna, 
+        errores.push(new Error("Sintactico", tokens[i].nombre, tokens[i].linea, tokens[i].columna, 
                 "Se esperaba console, tipo, identificador, void, while, do, switch o if, se encontro: "))
         break;
       //#endregion
@@ -129,7 +148,7 @@ function iniciarAnalisisSintactico(tokens, errores){
     }
   }
   console.log(imprimirRaiz(raiz, ""))
-  return errores
+  return [errores, raiz]
 }
 
 function instrucciones(token, index, errores){
@@ -153,7 +172,7 @@ function instrucciones(token, index, errores){
       case "string":
       case "bool":
         retorno = comprobarDeclaracion(token, i + 1, errores, 
-          new nodoArbol("TIPO_" + contador++, tokenAnalizar.lexema, tokenAnalizar.nombre, []));
+          new nodoArbol("TIPO_" + contador++, tokenAnalizar.lexema, tokenAnalizar.nombre, [], tokenAnalizar.linea));
         i = retorno[0];
         instruccion.hijos.push(retorno[1])
         break;
@@ -162,7 +181,7 @@ function instrucciones(token, index, errores){
       //#region FUNCION REASIGNACION DE VARIABLES
       case "identificador":
         retorno = comprobarReasignacion(token, i + 1, errores, 
-          new nodoArbol("OPERANDO_" + contador++, tokenAnalizar.lexema, tokenAnalizar.nombre, []));
+          new nodoArbol("OPERANDO_" + contador++, tokenAnalizar.lexema, tokenAnalizar.nombre, [], tokenAnalizar.linea));
         i = retorno[0];
         instruccion.hijos.push(retorno[1])
         break;
@@ -225,9 +244,24 @@ function instrucciones(token, index, errores){
         break;
       //#endregion
     
+      //#region COMENTARIOS
+      case "comentario":
+        for(var j = 0; j < comentarios.length; j++){
+          if(comentarios[j][0] === tokenAnalizar.lexema){
+            if(tokenAnalizar.lexema.startsWith("@S")){
+              instruccion.hijos.push(new nodoArbol("COMENTARIO_" + contador++, comentarios[j][1], "linea", []))
+            }else{
+              instruccion.hijos.push(new nodoArbol("COMENTARIO_" + contador++, comentarios[j][1], "multi", []))
+            }
+            break;
+          }
+        }
+        break;
+      //#endregion
+
       //#region ERROR
       default:
-        errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+        errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
                 "Se esperaba console, tipo, identificador, void, while, do, switch o if, se encontro: "))
         break;
       //#endregion
@@ -242,36 +276,36 @@ function instrucciones(token, index, errores){
 function comprobarOtros(token, index, errores, nombre){
   let estado
   if(nombre === "return"){
-    var funcReturn = new nodoArbol("RETURN_" + contador++, "RETURN", "return", [])
+    var funcReturn = new nodoArbol("RETURN_" + contador++, "RETURN", "return", [] , token[index].linea)
     estado = "RETURN"
     while(index !== token.length){
       switch(estado){
         case "RETURN":
           if(!operandos.includes(token[index].nombre)){
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
                 "Se esperaba operando, se encontro: "))
           }else{
-            funcReturn.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+            funcReturn.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [], token[index].linea));
           }
           estado = "R1"
           break;
         case "R1":
           if(operadores.includes(token[index].nombre)){
-            funcReturn.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+            funcReturn.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
             estado = "R2"
           }else if(token[index].nombre === "puntoComa"){
             estado = "R3"
           }else{
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
                 "Se esperaba operador o punto y coma, se encontro: "))
           }
           break;
         case "R2":
           if(!operandos.includes(token[index].nombre)){
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
                 "Se esperaba operando, se encontro: "))
           }else{
-            funcReturn.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+            funcReturn.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           }
           estado = "R1"
           break;
@@ -283,7 +317,7 @@ function comprobarOtros(token, index, errores, nombre){
     }
     return [-1, funcReturn]
   }else if(nombre === "continue"){
-    var funcReturn = new nodoArbol("CONTINUE_" + contador++, "CONTINUE", "continue", [])
+    var funcReturn = new nodoArbol("CONTINUE_" + contador++, "CONTINUE", "continue", [] , token[index].linea)
     estado = "CONTINUE"
     while(index !== token.length){
       switch(estado){
@@ -291,7 +325,7 @@ function comprobarOtros(token, index, errores, nombre){
           if(token[index].nombre === "puntoComa"){
             estado = "R3"
           }else{
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
                 "Se esperaba operando, se encontro: "))
           }
           break;
@@ -303,7 +337,7 @@ function comprobarOtros(token, index, errores, nombre){
     }
     return [-1, funcReturn]
   }else{
-    var funcReturn = new nodoArbol("BREAK_" + contador++, "break", "break", [])
+    var funcReturn = new nodoArbol("BREAK_" + contador++, "break", "break", [] , token[index].linea)
     estado = "BREAK"
     while(index !== token.length){
       switch(estado){
@@ -311,7 +345,7 @@ function comprobarOtros(token, index, errores, nombre){
           if(token[index].nombre === "puntoComa"){
             estado = "R3"
           }else{
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
                 "Se esperaba operando, se encontro: "))
           }
           break;
@@ -327,119 +361,119 @@ function comprobarOtros(token, index, errores, nombre){
 
 function comprobarFor(token, index, errores){
   let estado = "FOR"
-  var inicio = new nodoArbol("INICIALIZACION_" + contador++, "INICIALIZACION", "inicializacion", [])
-  var medio = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [])
-  var final = new nodoArbol("UPDATE_" + contador++, "UPDATE", "update", [])
+  var inicio = new nodoArbol("INICIALIZACION_" + contador++, "INICIALIZACION", "inicializacion", [] , token[index].linea)
+  var medio = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [] , token[index].linea)
+  var final = new nodoArbol("UPDATE_" + contador++, "UPDATE", "update", [] , token[index].linea)
   var valor
   var funcFor = new nodoArbol("FOR_" + contador++, "FOR", "for", [inicio, medio, final])
   while(index !== token.length){
     switch(estado){
       case "FOR":
         if(token[index].nombre !== "parenA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba parentesis abierto, se encontro: "))
         }
         estado = "F1"
         break;
       case "F1":
         if(!tipos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba tipo, se encontro: "))
         }else{
-          inicio.hijos.push(new nodoArbol("TIPO_" + contador++, token[index].lexema, token[index].nombre, []));
+          inicio.hijos.push(new nodoArbol("TIPO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "F2"
         }
         break;
       case "F2":
         if(token[index].nombre !== "identificador"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba identificador, se encontro: "))
         }else{
-          inicio.hijos.push(new nodoArbol("NOMBRE_" + contador++, token[index].lexema, token[index].nombre, []));
+          inicio.hijos.push(new nodoArbol("NOMBRE_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "F3"
         }
         break;
       case "F3":
         if(token[index].nombre !== "igual"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba igual, se encontro: "))
         }else{
-          valor = new nodoArbol("VALOR_" + contador++, "VALOR", "valor", [])
+          valor = new nodoArbol("VALOR_" + contador++, "VALOR", "valor", [] , token[index].linea)
           estado = "F4"
         }
         break;
       case "F4":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "F5"
         break;
       case "F5":
         if(operadores.includes(token[index].nombre)){
-          valor.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "F6"
         }else if(token[index].nombre === "puntoComa"){
           inicio.hijos.push(valor)
           estado = "F7"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operador o punto y coma, se encontro: "))
         }
         break;
       case "F6":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "F5"
         break;
       case "F7":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          medio.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          medio.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "F8"
         break;
       case "F8":
         if(operadores.includes(token[index].nombre)){
-          medio.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+          medio.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "F9"
         }else if(token[index].nombre === "puntoComa"){
           estado = "F10"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operador o punto y coma, se encontro: "))
         }
         break;
       case "F9":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          medio.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          medio.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "F8"
         break;
       case "F10":
         if(token[index].nombre === "identificador"){
-          final.hijos.push(new nodoArbol("VARIABLE_" + contador++, token[index].lexema, token[index].nombre, []));
+          final.hijos.push(new nodoArbol("VARIABLE_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           index++;
           if(token[index].nombre === "incremento" || token[index].nombre === "decremento"){
-            final.hijos.push(new nodoArbol("VARIABLE_" + contador++, token[index].lexema, token[index].nombre, []));
+            final.hijos.push(new nodoArbol("VARIABLE_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
             estado = "F11"
           }else{
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
                 "Se esperaba incremento o decremento, se encontro: "))
           }
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave cerrada, se encontro: "))
         }
         break;
@@ -447,7 +481,7 @@ function comprobarFor(token, index, errores){
         if(token[index].nombre === "parenC"){
           estado = "F12"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba parentesis cerrado, se encontro: "))
         }
         break;
@@ -461,7 +495,7 @@ function comprobarFor(token, index, errores){
           funcFor.hijos.push(inst[1])
           estado = "F_IN"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave abierta, se encontro: "))
         }
         break;
@@ -469,7 +503,7 @@ function comprobarFor(token, index, errores){
         if(token[index].nombre === "llaveC"){
           estado = "F14"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave cerrada, se encontro: "))
         }
         break;
@@ -484,43 +518,43 @@ function comprobarFor(token, index, errores){
 
 function comprobarIf(token, index, errores){
   let estado = "IF"
-  var condicion = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [])
+  var condicion = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [] , token[index].linea)
   var funcIf = new nodoArbol("IF_" + contador++, "IF", "if", [condicion])
   while(index !== token.length){
     switch(estado){
       case "IF":
         if(token[index].nombre !== "parenA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba parentesis abierto, se encontro: "))
         }
         estado = "I1"
         break;
       case "I1":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "I2"
         break;
       case "I2":
         if(operadores.includes(token[index].nombre)){
-          condicion.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "I3"
         }else if(token[index].nombre === "parenC"){
           estado = "I4"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operador o parentesis cerrado, se encontro: "))
         }
         break;
       case "I3":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "I2"
         break;
@@ -534,7 +568,7 @@ function comprobarIf(token, index, errores){
           funcIf.hijos.push(inst[1])
           estado = "I_IN"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba llave abierta, se encontro: "))
         }
         break;
@@ -542,7 +576,7 @@ function comprobarIf(token, index, errores){
         if(token[index].nombre === "llaveC"){
           estado = "I6"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave cerrada, se encontro: "))
         }
         break;
@@ -550,14 +584,14 @@ function comprobarIf(token, index, errores){
     if(estado === "I6"){
       if(token[index + 1].nombre === "else"){
         if(token[index + 2].nombre === "if"){
-          var funcElseIf = new nodoArbol("ELSEIF_" + contador++, "ELSEIF", "elseif", [])
+          var funcElseIf = new nodoArbol("ELSEIF_" + contador++, "ELSEIF", "elseif", [] , token[index].linea)
           var retorno = comprobarIf(token, index + 3, errores);
           index = retorno[0];
           funcElseIf.hijos.push(retorno[1])
           funcIf.hijos.push(funcElseIf)
           return [index, funcIf]
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba if, se encontro: "))
         }
       }else{
@@ -571,44 +605,44 @@ function comprobarIf(token, index, errores){
 
 function comprobarSwitch(token, index, errores){
   let estado = "SWITCH"
-  var funcCase = new nodoArbol("CASE_" + contador++, "CASE", "case", [])
-  var condicion = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [])
+  var funcCase = new nodoArbol("CASE_" + contador++, "CASE", "case", [] , token[index].linea)
+  var condicion = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [] , token[index].linea)
   var funcSwitch = new nodoArbol("SWITCH_" + contador++, "SWITCH", "switch", [condicion])
   while(index !== token.length){
     switch(estado){
       case "SWITCH":
         if(token[index].nombre !== "parenA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba parentesis abierto, se encontro: "))
         }
         estado = "S1"
         break;
       case "S1":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "S2"
         break;
       case "S2":
         if(token[index].nombre !== "parenC"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba parentesis cerrado, se encontro: "))
         }
         estado = "S3"
         break;
       case "S3":
         if(token[index].nombre !== "llaveA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba llave abierta, se encontro: "))
         }
         estado = "S4"
         break;
       case "S4":
         if(token[index].nombre !== "case"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba case, se encontro: "))
         }else{
           estado = "S5"
@@ -616,10 +650,10 @@ function comprobarSwitch(token, index, errores){
         break;
       case "S5":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          funcCase = new nodoArbol("CASE_" + contador++, token[index].lexema, token[index].nombre, [])
+          funcCase = new nodoArbol("CASE_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea)
         }
         estado = "S6"
         break;
@@ -634,7 +668,7 @@ function comprobarSwitch(token, index, errores){
           funcSwitch.hijos.push(funcCase);
           estado = "S_IN"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba dos puntos, se encontro: "))
         }
         break;
@@ -642,12 +676,12 @@ function comprobarSwitch(token, index, errores){
         if(token[index].nombre === "case"){
           estado = "S5"
         }else if(token[index].nombre === "default"){
-          funcCase = new nodoArbol("CASE_" + contador++, "default", "default", [])
+          funcCase = new nodoArbol("CASE_" + contador++, "default", "default", [] , token[index].linea)
           estado = "S8"
         }else if(token[index].nombre === "llaveC"){
           estado = "S9"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave cerrada, se encontro: "))
         }
         break;
@@ -662,7 +696,7 @@ function comprobarSwitch(token, index, errores){
           funcSwitch.hijos.push(funcCase);
           estado = "S_IN"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba dos puntos, se encontro: "))
         }
         break;
@@ -677,13 +711,13 @@ function comprobarSwitch(token, index, errores){
 
 function comprobarDoWhile(token, index, errores){
   let estado = "DOWHILE"
-  var condicion = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [])
-  var funcDoWhile = new nodoArbol("DOWHILE_" + contador++, "DOWHILE", "dowhile", [])
+  var condicion = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [] , token[index].linea)
+  var funcDoWhile = new nodoArbol("DOWHILE_" + contador++, "DOWHILE", "dowhile", [] , token[index].linea)
   while(index !== token.length){
     switch(estado){
       case "DOWHILE":
         if(token[index].nombre !== "llaveA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba llave abierta, se encontro: "))
         }else{
           var inst = instrucciones(token, index + 1, errores);
@@ -699,13 +733,13 @@ function comprobarDoWhile(token, index, errores){
         if(token[index].nombre === "llaveC"){
           estado = "D2"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
                 "Se esperaba llave cerrada, se encontro: "))
         }
         break;
       case "D2":
         if(token[index].nombre !== "while"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba while, se encontro: "))
         }else{
           estado = "D3"
@@ -713,7 +747,7 @@ function comprobarDoWhile(token, index, errores){
         break;
       case "D3":
         if(token[index].nombre !== "parenA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba parentesis abierto, se encontro: "))
         }else{
           estado = "D4";
@@ -721,36 +755,36 @@ function comprobarDoWhile(token, index, errores){
         break;
       case "D4":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "D5" 
         }
         break;
       case "D5":
         if(operadores.includes(token[index].nombre)){
-          condicion.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "D6"
         }else if(token[index].nombre === "parenC"){
           estado = "D7"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operador o parentesis cerrado, se encontro: "))
         }
         break;
       case "D6":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "D5" 
         }
         break;
       case "D7":
         if(token[index].nombre !== "puntoComa"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba punto y coma, se encontro: "))
         }else{
           estado = "D8"
@@ -767,43 +801,43 @@ function comprobarDoWhile(token, index, errores){
 
 function comprobarWhile(token, index, errores){
   let estado = "WHILE"
-  var condicion = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [])
+  var condicion = new nodoArbol("CONDICION_" + contador++, "CONDICION", "condicion", [] , token[index].linea)
   var funcWhile = new nodoArbol("WHILE_" + contador++, "WHILE", "while", [condicion])
   while(index !== token.length){
     switch(estado){
       case "WHILE":
         if(token[index].nombre !== "parenA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba parentesis abierto, se encontro: "))
         }
         estado = "W1"
         break;
       case "W1":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "W2"
         break;
       case "W2":
         if(operadores.includes(token[index].nombre)){
-          condicion.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "W3"
         }else if(token[index].nombre === "parenC"){
           estado = "W4"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operador o parentesis cerrado, se encontro: "))
         }
         break;
       case "W3":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          condicion.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "W2"
         break;
@@ -817,7 +851,7 @@ function comprobarWhile(token, index, errores){
           funcWhile.hijos.push(inst[1])
           estado = "W_IN"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba llave abierta, se encontro: "))
         }
         break;
@@ -825,7 +859,7 @@ function comprobarWhile(token, index, errores){
         if(token[index].nombre === "llaveC"){
           estado = "W6"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave cerrada, se encontro: "))
         }
         break;
@@ -840,29 +874,29 @@ function comprobarWhile(token, index, errores){
 
 function comprobarMetodo(token, index, errores){
   let estado = "METODO";
-  var metodo = new nodoArbol("METODO_" + contador++, "METODO", "metodo", [])
-  var parametros = new nodoArbol("PARAMETROS_" + contador++, "PARAMETROS", "parametros", [])
+  var metodo = new nodoArbol("METODO_" + contador++, "METODO", "metodo", [] , token[index].linea)
+  var parametros = new nodoArbol("PARAMETROS_" + contador++, "PARAMETROS", "parametros", [] , token[index].linea)
   while(index !== token.length){
     switch(estado){
       case "METODO":
           if(token[index].nombre === "identificador"){
             metodo.hijos.push(new nodoArbol("NOMBRE_" + contador++, "NOMBRE", "nombre", [
-              new nodoArbol("NOMBRE_" + contador++, token[index].lexema, token[index].nombre, [])]))
+              new nodoArbol("NOMBRE_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea)]))
             metodo.hijos.push(parametros)
             estado = "M8";
           }else if(token[index].nombre === "main"){
             estado = "M9"
             metodo.hijos.push(new nodoArbol("MAIN_" + contador++, "MAIN", "main", [
-              new nodoArbol("NOMBRE_" + contador++, token[index].lexema, token[index].nombre, [])
+              new nodoArbol("NOMBRE_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea)
             ]))
           }else{
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba identificador, se encontro: "))
           }
       break;
       case "M9":
         if(token[index].nombre !== "parenA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba parentesis abierto, se encontro: "))
         }else{
           estado = "M10"
@@ -870,7 +904,7 @@ function comprobarMetodo(token, index, errores){
         break;
       case "M10":
         if(token[index].nombre !== "parenC"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba parentesis cerrado, se encontro: "))
         }else{
           estado = "M5"
@@ -878,7 +912,7 @@ function comprobarMetodo(token, index, errores){
         break;
       case "M8":
         if(token[index].nombre !== "parenA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba parentesis abierto, se encontro: "))
         }
         estado = "M1";
@@ -889,16 +923,16 @@ function comprobarMetodo(token, index, errores){
         }else if(token[index].nombre === "parenC"){
           estado = "M5"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba tipo o parentesis cerrado, se encontro: "))
         }
       break;
       case "M2":
         if(token[index].nombre !== "identificador"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba identificador, se encontro: "))
         }else{
-          parametros.hijos.push(new nodoArbol("PARAMETRO_" + contador++, token[index].lexema, token[index].nombre, []))
+          parametros.hijos.push(new nodoArbol("PARAMETRO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea))
         }
         estado = "M3";
       break;
@@ -908,7 +942,7 @@ function comprobarMetodo(token, index, errores){
         }else if(token[index].nombre === "parenC"){
           estado = "M5"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba coma o parentesis cerrado, se encontro: "))
         }
       break;
@@ -916,7 +950,7 @@ function comprobarMetodo(token, index, errores){
         if(tipos.includes(token[index].nombre)){
           estado = "M2"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba tipo, se encontro: "))
         }
       break;
@@ -930,7 +964,7 @@ function comprobarMetodo(token, index, errores){
           metodo.hijos.push(inst[1])
           estado = "M_IN"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave abierta, se encontro: "))
         }
         break;
@@ -938,7 +972,7 @@ function comprobarMetodo(token, index, errores){
         if(token[index].nombre === "llaveC"){
           estado = "M7"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave cerrada, se encontro: "))
         }
         break;
@@ -955,43 +989,43 @@ function comprobarReasignacion(token, index, errores, variable){
   let estado = "REASIGNACION"
   var tam = errores.length
   var variable = new nodoArbol("VARIABLE_" + contador++, "VARIABLE", "variable", [variable])
-  var valor = new nodoArbol("VALOR_" + contador++, "VALOR", "valor", [])
+  var valor = new nodoArbol("VALOR_" + contador++, "VALOR", "valor", [] , token[index].linea)
   var reasignacion = new nodoArbol("REASIGNACION_" + contador++, "REASIGNACION", "reasignacion", [variable, valor])
   while(index !== token.length){
     switch(estado){
       case "REASIGNACION":
         if(token[index].nombre !== "igual"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba igual, se encontro: "))
         }
         estado = "R1"
         break;
       case "R1":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "R2"
         break;
       case "R2":
         if(operadores.includes(token[index].nombre)){
-          valor.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "R3"
         }else if(token[index].nombre === "puntoComa"){
           estado = "R4"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operador o punto y coma, se encontro: "))
         }
         break;
       case "R3":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "R2"
         break;
@@ -1007,18 +1041,18 @@ function comprobarReasignacion(token, index, errores, variable){
 function comprobarDeclaracion(token, index, errores, tipo){
   let estado = "DECLARACION"
   var tam = errores.length
-  var variables = new nodoArbol("NOMBRE_" + contador++, "NOMBRE", "nombre", [])
-  var valor = new nodoArbol("VALOR_" + contador++, "VALOR", "valor", [])
+  var variables = new nodoArbol("NOMBRE_" + contador++, "NOMBRE", "nombre", [] , token[index].linea)
+  var valor = new nodoArbol("VALOR_" + contador++, "VALOR", "valor", [] , token[index].linea)
   var declaracion = new nodoArbol("DECLARACION_" + contador++, "DECLARACION", "declaracion", [tipo, variables, valor])
-  var parametros = new nodoArbol("PARAMETROS_" + contador++, "PARAMETROS", "parametros", [])
+  var parametros = new nodoArbol("PARAMETROS_" + contador++, "PARAMETROS", "parametros", [] , token[index].linea)
   while(index !== token.length){
     switch(estado){
       case "DECLARACION":
           if(token[index].nombre !== "identificador"){
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba identificador, se encontro: "))
           }else{
-            variables.hijos.push(new nodoArbol("VARIABLE_" + contador++, token[index].lexema, token[index].nombre, []));
+            variables.hijos.push(new nodoArbol("VARIABLE_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           }
           estado = "V1"
         break;
@@ -1032,25 +1066,25 @@ function comprobarDeclaracion(token, index, errores, tipo){
           }else if(token[index].nombre === "puntoComa"){
             estado = "V4"
           }else{
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba coma, igual, parentesis abierto o punto y coma, se encontro: "))
           }
         break;
       case "V2":
         if(token[index].nombre !== "identificador"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
             "Se esperaba identificador, se encontro: "))
         }else{
-          variables.hijos.push(new nodoArbol("VARIABLE_" + contador++, token[index].lexema, token[index].nombre, []));
+          variables.hijos.push(new nodoArbol("VARIABLE_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "V1"
         break;
       case "V3":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "V6"
         break;
@@ -1061,36 +1095,36 @@ function comprobarDeclaracion(token, index, errores, tipo){
         }else if(token[index].nombre === "parenC"){
           estado = "V10"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba tipo o parentesis cerrado, se encontro: "))
         }
         break;
       case "V6":
         if(operadores.includes(token[index].nombre)){
-          valor.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "V7"
         }else if(token[index].nombre === "puntoComa"){
           estado = "V4"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operador o punto y coma, se encontro: "))
         }
         break;
       case "V7":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          valor.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "V6"
         break;
       case "V8":
         if(token[index].nombre === "identificador"){
-          parametros.hijos.push(new nodoArbol("PARAMETRO_" + contador++, token[index].lexema, token[index].nombre, []))
+          parametros.hijos.push(new nodoArbol("PARAMETRO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea))
           estado = "V9"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba identificador, se encontro: "))
         }
         break;
@@ -1100,7 +1134,7 @@ function comprobarDeclaracion(token, index, errores, tipo){
         }else if(token[index].nombre === "parenC"){
           estado = "V10"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba coma o parentesis cerrado, se encontro: "))
         }
         break;
@@ -1114,7 +1148,7 @@ function comprobarDeclaracion(token, index, errores, tipo){
           declaracion.hijos.push(inst[1])
           estado = "V_IN"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave abierta, se encontro: "))
         }
         break;
@@ -1122,7 +1156,7 @@ function comprobarDeclaracion(token, index, errores, tipo){
         if(tipos.includes(token[index].nombre)){
           estado = "V8"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba tipo, se encontro: "))
         }
         break;
@@ -1130,7 +1164,7 @@ function comprobarDeclaracion(token, index, errores, tipo){
         if(token[index].nombre === "llaveC"){
           estado = "V12"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba llave cerrada, se encontro: "))
         }
         break;
@@ -1146,36 +1180,36 @@ function comprobarDeclaracion(token, index, errores, tipo){
 function comprobarImprimir(token, index, errores){
   let estado = "PRINT";
   var tam = errores.length
-  var imprimir = new nodoArbol("IMPRIMIR_" + contador++, "IMPRIMIR", "imprimir", [])
+  var imprimir = new nodoArbol("IMPRIMIR_" + contador++, "IMPRIMIR", "imprimir", [] , token[index].linea)
   while(index !== token.length){
     switch(estado){
       case "PRINT":
           if(token[index].nombre !== "punto"){
-            errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba punto, se encontro: "))
           }
           estado = "P1";
       break;
       case "P1":
         if(token[index].nombre !== "write"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba write, se encontro: "))
         }
         estado = "P2";
       break;
       case "P2":
         if(token[index].nombre !== "parenA"){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba parentesis abierto, se encontro: "))
         }
         estado = "P3";
       break;
       case "P3":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          imprimir.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          imprimir.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "P4";
       break;
@@ -1184,21 +1218,21 @@ function comprobarImprimir(token, index, errores){
           estado = "P6"
           break;
         }else if(operadores.includes(token[index].nombre)){
-          imprimir.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, []));
+          imprimir.hijos.push(new nodoArbol("OPERADOR_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
           estado = "P5"
           break;
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operador o parentesis cerrado, se encontro: "))
         }
         estado = "P6"
       break;
       case "P5":
         if(!operandos.includes(token[index].nombre)){
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba operando, se encontro: "))
         }else{
-          imprimir.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, []));
+          imprimir.hijos.push(new nodoArbol("OPERANDO_" + contador++, token[index].lexema, token[index].nombre, [] , token[index].linea));
         }
         estado = "P4";
         break;
@@ -1206,7 +1240,7 @@ function comprobarImprimir(token, index, errores){
         if(token[index].nombre === "puntoComa"){
           estado = "P7"
         }else{
-          errores.push(new Error("Sintactico", token[index].lexema, token[index].linea, token[index].columna, 
+          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
               "Se esperaba punto y coma, se encontro: "))
         }
         break;

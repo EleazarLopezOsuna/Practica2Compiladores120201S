@@ -1,6 +1,6 @@
 //Expresiones regulares
-const comentarioLinea = /\/\/.*/gm
-const comentarioMultiLinea = /\/\*[^\*\/]*\*\//gm
+const comentarioLinea = /\/\/.*/g
+const comentarioMultiLinea = /\/\*[^\*\/]*\*\//g
 const identificador = /^[a-zA-Z][\w_]*$/
 const cadena = /^\"[^\"]*\"$/
 const caracter = /^'[^']'$/
@@ -8,6 +8,7 @@ const entero = /^\d+$/
 const html = /^'[^']*'$/
 const boleano = /^true|false$/
 const doble = /^\d+\.\d+$/
+const mmm = /^@(SIMPLE|MULTI)_\d+$/
 
 //Palabras reservadas
 const rVoid = "void"
@@ -34,6 +35,7 @@ const rContinue = "continue"
 //Valores a retornar
 var listaTokens = []
 var listaErrores = []
+var comentarios = []
 
 //Token
 function Token(nombre, lexema, linea, columna){
@@ -50,6 +52,10 @@ function Error(tipo, lexema, linea, columna, mensaje){
   this.linea = linea
   this.columna = columna
   this.mensaje = mensaje
+}
+
+function obtenerComentarios(){
+  return comentarios
 }
 
 function obtenerTokens(){
@@ -103,10 +109,11 @@ function buscarNombre(lexema){
     case rContinue:
       return "continue"
     default:
-      if(lexema.match(boleano)){
+      if(lexema.match(mmm)){
+        return "comentario"
+      }else if(lexema.match(boleano)){
         return "boleano"
-      }
-      if(lexema.match(identificador)){
+      }else if(lexema.match(identificador)){
         return "identificador";
       }else if(lexema.match(entero)){
         return "entero";
@@ -130,8 +137,22 @@ function iniciarAnalisisLexico(texto){
   listaTokens = []
 
   //Eliminamos los comentarios del texto a analizar
-  var analizar = texto.replace(comentarioLinea, "")
-  analizar = analizar.replace(comentarioMultiLinea, "")
+  var matchs = texto.match(comentarioLinea)
+  var analizar = texto
+  if(matchs !== null){
+    for(var i = 0; i < matchs.length; i++){
+      analizar = analizar.replace(matchs[i], "@SIMPLE_" + i)
+      comentarios.push(["@SIMPLE_" + i, matchs[i]])
+    }
+  }
+
+  matchs = texto.match(comentarioMultiLinea)
+  if(matchs !== null){
+    for(var i = 0; i < matchs.length; i++){
+      analizar = analizar.replace(matchs[i], "@MULTI_" + i)
+      comentarios.push(["@MULTI_" + i, matchs[i]])
+    }
+  }
 
   //Seteamos los valores para el analizador lexico
   var linea = 0;
@@ -147,7 +168,6 @@ function iniciarAnalisisLexico(texto){
     //Recorremos cada linea caracter por caracter para obtener la columna
     for(columna = 0; columna < lines[linea].length; columna++){
       switch(lines[linea].charAt(columna)){
-        //Encontro un espacio en blanco, termino el lexema si no esta en cadena
 
         //#region Espacio en blanco
         case " ":
