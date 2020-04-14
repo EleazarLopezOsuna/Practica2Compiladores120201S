@@ -137,6 +137,7 @@ function iniciarAnalisisLexico(texto){
   var linea = 0;
   var columna = 0;
   var lexema = "";
+  var line = 0;
 
   //Obtenemos todas las lineas que estan en el texto
   var lines = analizar.match(/^.*((\r\n|\n|\r)|$)/gm);
@@ -152,9 +153,9 @@ function iniciarAnalisisLexico(texto){
         case " ":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
@@ -165,9 +166,9 @@ function iniciarAnalisisLexico(texto){
         case "\n":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
@@ -178,9 +179,9 @@ function iniciarAnalisisLexico(texto){
         case "\r":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
@@ -191,13 +192,13 @@ function iniciarAnalisisLexico(texto){
         case "\"":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
-            listaTokens.push(nuevoToken);
             lexema = "";
           }
+
           do{
             lexema += lines[linea].charAt(columna);
             if(columna === (lines[linea].length) - 1){
@@ -208,9 +209,9 @@ function iniciarAnalisisLexico(texto){
           lexema += lines[linea].charAt(columna);
 
           if(buscarNombre(lexema) === "error"){
-            listaErrores.push(new Error("Sintactico", lexema, linea + 1, columna, "Se esperaba comillas al final de la cadena "))
+            listaErrores.push(new Error("Sintactico", lexema, line + 1, columna, "Se esperaba comillas al final de la cadena "))
           }else{
-            listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+            listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
           }
           lexema = "";
           break;
@@ -220,9 +221,9 @@ function iniciarAnalisisLexico(texto){
         case "\'":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
@@ -236,9 +237,9 @@ function iniciarAnalisisLexico(texto){
           lexema += lines[linea].charAt(columna);
 
           if(buscarNombre(lexema) === "error"){
-            listaErrores.push(new Error("Sintactico", lexema, linea + 1, columna, "Se esperaba comillas al final de la cadena "))
+            listaErrores.push(new Error("Sintactico", lexema, line + 1, columna, "Se esperaba comillas al final de la cadena "))
           }else{
-            listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+            listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
           }
           lexema = "";
           break;
@@ -248,13 +249,13 @@ function iniciarAnalisisLexico(texto){
         case "(":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("parenA", "(", linea + 1, columna));
+          listaTokens.push(new Token("parenA", "(", line + 1, columna));
           break;
         //#endregion
 
@@ -262,13 +263,13 @@ function iniciarAnalisisLexico(texto){
         case ")":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("parenC", ")", linea + 1, columna));
+          listaTokens.push(new Token("parenC", ")", line + 1, columna));
           break;
         //#endregion
 
@@ -276,13 +277,13 @@ function iniciarAnalisisLexico(texto){
         case "{":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("llaveA", "{", linea + 1, columna));
+          listaTokens.push(new Token("llaveA", "{", line + 1, columna));
           break;
         //#endregion
 
@@ -290,13 +291,13 @@ function iniciarAnalisisLexico(texto){
         case "}":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("llaveC", "}", linea + 1, columna));
+          listaTokens.push(new Token("llaveC", "}", line + 1, columna));
           break;
         //#endregion
 
@@ -304,13 +305,13 @@ function iniciarAnalisisLexico(texto){
         case ",":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("coma", ",", linea + 1, columna));
+          listaTokens.push(new Token("coma", ",", line + 1, columna));
           break;
         //#endregion
 
@@ -318,13 +319,13 @@ function iniciarAnalisisLexico(texto){
         case ":":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("dosPuntos", ":", linea + 1, columna));
+          listaTokens.push(new Token("dosPuntos", ":", line + 1, columna));
           break;
         //#endregion
 
@@ -332,11 +333,11 @@ function iniciarAnalisisLexico(texto){
         case ".":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
               if(lexema === "Console"){
-                listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
-                listaTokens.push(new Token("punto", ".", linea + 1, columna));
+                listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
+                listaTokens.push(new Token("punto", ".", line + 1, columna));
                 lexema = "";
               }else{
                 lexema = lexema + lines[linea].charAt(columna)
@@ -350,13 +351,13 @@ function iniciarAnalisisLexico(texto){
         case ";":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("puntoComa", ";", linea + 1, columna));
+          listaTokens.push(new Token("puntoComa", ";", line + 1, columna));
           break;
         //#endregion
 
@@ -364,17 +365,17 @@ function iniciarAnalisisLexico(texto){
         case "=":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          columna++;
-          if(lines[linea].charAt(columna) === "="){
-            listaTokens.push(new Token("igualdad", "==", linea + 1, columna))
+          if(lines[linea].charAt(columna + 1) === "="){
+            listaTokens.push(new Token("igualdad", "==", line + 1, columna))
+            columna++
           }else{
-            listaTokens.push(new Token("igual", "=", linea + 1, columna))
+            listaTokens.push(new Token("igual", "=", line + 1, columna))
           }
           break;
         //#endregion
@@ -383,17 +384,17 @@ function iniciarAnalisisLexico(texto){
         case "+":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          columna++;
-          if(lines[linea].charAt(columna) === "+"){
-            listaTokens.push(new Token("incremento", "++", linea + 1, columna))
+          if(lines[linea].charAt(columna + 1) === "+"){
+            listaTokens.push(new Token("incremento", "++", line + 1, columna))
+            columna++
           }else{
-            listaTokens.push(new Token("suma", "+", linea + 1, columna))
+            listaTokens.push(new Token("suma", "+", line + 1, columna))
           }
           break;
         //#endregion
@@ -402,17 +403,17 @@ function iniciarAnalisisLexico(texto){
         case "-":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          columna++;
-          if(lines[linea].charAt(columna) === "-"){
-            listaTokens.push(new Token("decremento", "--", linea + 1, columna))
+          if(lines[linea].charAt(columna + 1) === "-"){
+            listaTokens.push(new Token("decremento", "--", line + 1, columna))
+            columna++;
           }else{
-            listaTokens.push(new Token("resta", "-", linea + 1, columna))
+            listaTokens.push(new Token("resta", "-", line + 1, columna))
           }
           break;
         //#endregion
@@ -421,13 +422,13 @@ function iniciarAnalisisLexico(texto){
         case "*":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("multiplicacion", "*", linea + 1, columna));
+          listaTokens.push(new Token("multiplicacion", "*", line + 1, columna));
           break;
         //#endregion
 
@@ -435,13 +436,13 @@ function iniciarAnalisisLexico(texto){
         case "/":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          listaTokens.push(new Token("division", "/", linea + 1, columna));
+          listaTokens.push(new Token("division", "/", line + 1, columna));
           break;
         //#endregion
 
@@ -449,17 +450,17 @@ function iniciarAnalisisLexico(texto){
         case "&":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          columna++;
-          if(lines[linea].charAt(columna) === "&"){
-              listaTokens.push(new Token("and", "&&", linea + 1, columna));
+          if(lines[linea].charAt(columna + 1) === "&"){
+              listaTokens.push(new Token("and", "&&", line + 1, columna));
+              columna++;
           }else{
-            listaErrores.push(new Error("Lexico", lexema, linea + 1, columna))
+            listaErrores.push(new Error("Lexico", lexema, line + 1, columna))
           }
           break;
         //#endregion
@@ -468,17 +469,17 @@ function iniciarAnalisisLexico(texto){
         case "|":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          columna++;
-          if(lines[linea].charAt(columna) === "|"){
-              listaTokens.push(new Token("or", "||", linea + 1, columna));
+          if(lines[linea].charAt(columna + 1) === "|"){
+              listaTokens.push(new Token("or", "||", line + 1, columna));
+              columna++;
           }else{
-            listaErrores.push(new Error("Lexico", lexema, linea + 1, columna))
+            listaErrores.push(new Error("Lexico", lexema, line + 1, columna))
           }
           break;
         //#endregion
@@ -487,17 +488,17 @@ function iniciarAnalisisLexico(texto){
         case "!":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          columna++;
-          if(lines[linea].charAt(columna) === "="){
-            listaTokens.push(new Token("distinto", "!=", linea + 1, columna))
+          if(lines[linea].charAt(columna + 1) === "="){
+            listaTokens.push(new Token("distinto", "!=", line + 1, columna))
+            columna++;
           }else{
-            listaTokens.push(new Token("not", "!", linea + 1, columna))
+            listaTokens.push(new Token("not", "!", line + 1, columna))
           }
           break;
         //#endregion
@@ -506,17 +507,17 @@ function iniciarAnalisisLexico(texto){
         case ">":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          columna++;
-          if(lines[linea].charAt(columna) === "="){
-            listaTokens.push(new Token("mayorIgual", ">=", linea + 1, columna))
+          if(lines[linea].charAt(columna + 1) === "="){
+            listaTokens.push(new Token("mayorIgual", ">=", line + 1, columna))
+            columna++;
           }else{
-            listaTokens.push(new Token("mayor", ">", linea + 1, columna))
+            listaTokens.push(new Token("mayor", ">", line + 1, columna))
           }
           break;
         //#endregion
@@ -525,17 +526,17 @@ function iniciarAnalisisLexico(texto){
         case "<":
           if(lexema !== ""){
             if(buscarNombre(lexema) === "error"){
-              listaErrores.push(new Error("Lexico", lexema, linea + 1, columna, "Caracter no valido en la cadena "))
+              listaErrores.push(new Error("Lexico", lexema, line + 1, columna, "Caracter no valido en la cadena "))
             }else{
-              listaTokens.push(new Token(buscarNombre(lexema), lexema, linea + 1, columna));
+              listaTokens.push(new Token(buscarNombre(lexema), lexema, line + 1, columna));
             }
             lexema = "";
           }
-          columna++;
-          if(lines[linea].charAt(columna) === "="){
-            listaTokens.push(new Token("menorIgual", "<=", linea + 1, columna))
+          if(lines[linea].charAt(columna + 1) === "="){
+            listaTokens.push(new Token("menorIgual", "<=", line + 1, columna))
+            columna++;
           }else{
-            listaTokens.push(new Token("menor", "<", linea + 1, columna))
+            listaTokens.push(new Token("menor", "<", line + 1, columna))
           }
           break;
         //#endregion
@@ -552,5 +553,6 @@ function iniciarAnalisisLexico(texto){
         //#endregion
       }
     }
+    line++;
   }
 }
