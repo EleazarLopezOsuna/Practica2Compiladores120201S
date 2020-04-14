@@ -147,7 +147,7 @@ function iniciarAnalisisSintactico(tokens, errores, comments){
       break;
     }
   }
-  console.log(imprimirRaiz(raiz, ""))
+  //console.log(imprimirRaiz(raiz, ""))
   return [errores, raiz]
 }
 
@@ -582,20 +582,24 @@ function comprobarIf(token, index, errores){
         break;
     }
     if(estado === "I6"){
-      if(token[index + 1].nombre === "else"){
-        if(token[index + 2].nombre === "if"){
-          var funcElseIf = new nodoArbol("ELSEIF_" + contador++, "ELSEIF", "elseif", [] , token[index].linea)
-          var retorno = comprobarIf(token, index + 3, errores);
-          index = retorno[0];
-          funcElseIf.hijos.push(retorno[1])
-          funcIf.hijos.push(funcElseIf)
-          return [index, funcIf]
+      if((index + 1) < token.length){
+        if(token[index + 1].nombre === "else"){
+          if(token[index + 2].nombre === "if"){
+            var funcElseIf2 = new nodoArbol("ELSEIF_" + contador++, "ELSEIF", "elseif", [] , token[index].linea)
+            var funcElseIf = new nodoArbol("ELSEIF_" + contador++, "ELSEIF", "elseif", [funcElseIf2] , token[index].linea)
+            var retorno = comprobarIf(token, index + 3, errores);
+            index = retorno[0];
+            funcElseIf2.hijos = retorno[1].hijos
+            //funcElseIf.hijos.push(retorno[1])
+            funcIf.hijos.push(funcElseIf)
+            return [index, funcIf]
+          }else{
+            errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
+                "Se esperaba if, se encontro: "))
+          }
         }else{
-          errores.push(new Error("Sintactico", token[index].nombre, token[index].linea, token[index].columna, 
-              "Se esperaba if, se encontro: "))
+          return [index, funcIf]
         }
-      }else{
-        return [index, funcIf]
       }
     }
     index++;
@@ -1179,7 +1183,6 @@ function comprobarDeclaracion(token, index, errores, tipo){
 
 function comprobarImprimir(token, index, errores){
   let estado = "PRINT";
-  var tam = errores.length
   var imprimir = new nodoArbol("IMPRIMIR_" + contador++, "IMPRIMIR", "imprimir", [] , token[index].linea)
   while(index !== token.length){
     switch(estado){

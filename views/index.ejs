@@ -118,16 +118,17 @@
 
 			if(errores.length === contadorErrores){
 				agregarVariables(resultado[1]);
+				console.log(traducirPython(resultado[1], ""))
 			}else{
 				alert("Texto Erroneo")
 				reportarErrores(errores)
 			}
 
-			for(var i = 0; i < tokens.length; i++){
+			/*for(var i = 0; i < tokens.length; i++){
 				console.log("Nombre: " + tokens[i].nombre + " Valor: " + tokens[i].lexema)
 			}
 
-			/*for(var i = 0; i < errores.length; i++){
+			for(var i = 0; i < errores.length; i++){
 				console.log(errores[i].mensaje + errores[i].lexema + " linea: " + errores[i].linea + " columna: " + errores[i].columna)
 			}*/
 		}
