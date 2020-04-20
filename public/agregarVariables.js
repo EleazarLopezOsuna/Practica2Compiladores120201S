@@ -52,6 +52,27 @@ function recorrer(raiz){
           tr.appendChild(linea)
           document.getElementById('cuerpo').appendChild(tr)
         }
+    }else if(raiz.hijos[i].tipo === "parametros"){
+        for(var j = 0; j < raiz.hijos.length; j++){
+          if(raiz.hijos[i].hijos[j] !== undefined){
+            var tipo = document.createElement('td')
+            var tr = document.createElement('tr')
+            var linea = document.createElement('td')
+            var nombre = document.createElement('td')
+            linea.scope = "col"
+            nombre.scope = "col"
+            tipo.scope = "col"
+
+            tipo.textContent = raiz.hijos[i].hijos[j].tipo
+	          linea.textContent = raiz.hijos[i].hijos[j].linea
+            nombre.textContent = raiz.hijos[i].hijos[j].valor
+
+            tr.appendChild(nombre)
+	          tr.appendChild(tipo)
+            tr.appendChild(linea)
+            document.getElementById('cuerpo').appendChild(tr)
+          }
+        }
     }
     recorrer(raiz.hijos[i])
   }

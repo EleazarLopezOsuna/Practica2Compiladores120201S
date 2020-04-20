@@ -82,8 +82,8 @@
   <li class="nav-item">
 		<div style="margin: 0;">
 			<ul id="archivosActivos" class="nav nav-tabs">
-				<li><a href="">HTML</a></li>
-				<li><a href="">JSON</a></li>
+				<li><a href="#" onclick="cargarHtml()">HTML</a></li>
+				<li><a href="#" onclick="cargarJson()">JSON</a></li>
 			</ul>
 			<div id="areasTexto" class="tab-content" style="margin: 0;">
 				<div id="html" class="tab-pane fade in active" style="margin: 0;">
@@ -101,6 +101,16 @@
 
 <input id="fileInput" type="file" hidden accept=".cs"/>
 <script>
+	var textoHtml = ""
+	var textoJson = ""
+	
+	function cargarHtml(){
+		document.getElementById('htmljson').value = textoHtml
+	}
+
+	function cargarJson(){
+		document.getElementById('htmljson').value = textoJson
+	}
 
 	function compilar(){
 		iniciarAnalisisLexico(document.getElementById('codigo').value);
@@ -118,7 +128,14 @@
 
 			if(errores.length === contadorErrores){
 				agregarVariables(resultado[1]);
-				console.log(traducirPython(resultado[1], ""))
+				document.getElementById('traduccion').value = traducirPython(resultado[1], "")
+				textoHtml = document.getElementById('htmljson').value = recorrerHtml(resultado[1]).replace(/'/gm, "").replace(/></gm, ">\n<")
+				var a = traducirJson(textoHtml.replace(/\n/gm, ""), "")[0].split("\n")
+				for(var i = 0; i < a.length; i++){
+					if(!a[i].match(/^\s+$/)){
+						textoJson += a[i] + "\n"
+					}
+				}
 			}else{
 				alert("Texto Erroneo")
 				reportarErrores(errores)
